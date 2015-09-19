@@ -9,13 +9,12 @@ object project2 {
 	def main(args: Array[String]){
 		val GOSSIP_MAX: Int = 10
 		val PUSH_SUM_MAX: Int = 3
-		val TRANSMIT_NUMBER: Int = 5
 		val msg: String = "Gossip"
 
 		case class CreateTopology()
-		case class Done(myID: String)
 		case class Gossip(msg: String)
 		case class PushSum(s:Double, w:Double)
+		case class PushSumDone(sum: Double)
 
 		println("project2 - Gossip Protocol")
 		class Master(numNodes: Int, topology: String, algorithm: String) extends Actor{
@@ -38,7 +37,7 @@ object project2 {
 						if(algorithm == "gossip"){
 							context.actorSelection(pivot) ! Gossip(msg)
 						} else if(algorithm == "push-sum") {
-							context.actorSelection(pivot) ! PushSum(0,0)
+							context.actorSelection(pivot) ! PushSum(0,1)
 						}
 					} 
 					if(topology == "3D"){
@@ -53,7 +52,13 @@ object project2 {
 
 				case "Done" =>
 					var totalTime: Long = System.currentTimeMillis - startTime
-					println("Time to converge = " + totalTime.millis)
+					println("****** Time to converge = " + totalTime.millis + " ******")
+					context.system.shutdown()
+
+				case PushSumDone(sum: Double) =>
+					var totalTime: Long = System.currentTimeMillis - startTime
+					println("****** Time to converge = " + totalTime.millis + " ******")
+					println("****** Sum = " + sum + " ******")
 					context.system.shutdown()
 
 			}
@@ -64,8 +69,8 @@ object project2 {
 			
 			var count: Int = _
 			var message: String = _
-			var s: Double=_
-			var w : Double=_
+			var s: Double= myID.toDouble
+			var w : Double= 0.0
 			var pcount : Int=_
 
 			def getNext(): String = {
@@ -100,17 +105,17 @@ object project2 {
 					} else {
 						pcount = 0
 					}
-					this.s = this.s + s
-					this.w = this.w + w
-					this.s = this.s/2
-					this.w = this.w/2
-					
-					if(pcount == PUSH_SUM_MAX-1){
-						context.parent ! "Done"
+					if(pcount == PUSH_SUM_MAX){
+						context.parent ! PushSumDone(this.s/this.w)
+					} else {
+						this.s = this.s + s
+						this.w = this.w + w
+						this.s = this.s/2
+						this.w = this.w/2
+						var next : String = getNext()
+						while(next == myID) next = getNext()
+						context.actorSelection("../"+next) ! PushSum(this.s,this.w)
 					}
-					var next : String = getNext()
-					while(next == myID) next = getNext()
-					context.actorSelection("../"+next) ! PushSum(this.s,this.w)
 			}
 		}
 

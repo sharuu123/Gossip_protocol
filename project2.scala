@@ -8,17 +8,19 @@ import scala.concurrent.duration._
 object project2 {
 	def main(args: Array[String]){
 		val GOSSIP_MAX: Int = 10
+		val PUSH_SUM_MAX: Int = 3
+		val TRANSMIT_NUMBER: Int = 5
 		val msg: String = "Gossip"
 
 		case class CreateTopology()
 		case class Done(myID: String)
 		case class Gossip(msg: String)
+		case class PushSum(s:Double, w:Double)
 
 		println("project2 - Gossip Protocol")
 		class Master(numNodes: Int, topology: String, algorithm: String) extends Actor{
 
 			var converged: Boolean = false
-			var count: Int = _
 			var startTime: Long = _
 
 			def receive = {
@@ -27,15 +29,16 @@ object project2 {
 					if(topology == "full"){
 						println("Creating the full topology")
 						for(i <- 0 until numNodes){
-							val myID: String = i.toString
+							var myID: String = i.toString
 							val act = context.actorOf(Props(new Node(myID, numNodes, topology, algorithm)),name=myID)
 						}
 						startTime = System.currentTimeMillis
-						var pivot:String = (Random.nextInt(numNodes)).toString
+						var pivot: String = (Random.nextInt(numNodes)).toString
+						println("Starting the algorithm from node = " + pivot)
 						if(algorithm == "gossip"){
 							context.actorSelection(pivot) ! Gossip(msg)
-						} else {
-
+						} else if(algorithm == "push-sum") {
+							context.actorSelection(pivot) ! PushSum(0,0)
 						}
 					} 
 					if(topology == "3D"){
@@ -49,12 +52,9 @@ object project2 {
 					} 
 
 				case "Done" =>
-					count = count+1
-					if(count == numNodes) {
-						var totalTime: Long = System.currentTimeMillis - startTime
-						println("Time to converge = " + totalTime.millis)
-						context.system.shutdown()
-					}
+					var totalTime: Long = System.currentTimeMillis - startTime
+					println("Time to converge = " + totalTime.millis)
+					context.system.shutdown()
 
 			}
 		}
@@ -64,36 +64,53 @@ object project2 {
 			
 			var count: Int = _
 			var message: String = _
-
-			def PushSum() = {
-				// Randomly select a neighbor and send half of the sum and weight
-			}
+			var s: Double=_
+			var w : Double=_
+			var pcount : Int=_
 
 			def getNext(): String = {
 				topology match {
 					case "full" =>
 						(Random.nextInt(numNodes)).toString
 					// case "3D" =>
-					// case "line" =>
+					//case "line" =>
+
 					// case "imp3D" =>
 				}
 			}
 
 			def receive = {
 				case Gossip(msg: String) =>
+					// println("Got msg for node = " + myID)
 					// Randomly select a neighbor and send the gossip
 					if(count <= GOSSIP_MAX-1){
 						this.message = msg
 						count += 1
 						var next: String = getNext()
-						while(next != myID) next = getNext()
+						while(next == myID) next = getNext()
+						// println("Sent msg to node = " + next)
 						context.actorSelection("../"+next) ! Gossip(msg)
+					} else if(count == GOSSIP_MAX) {
+						context.parent ! "Done"
+					} 
+				case PushSum(s: Double, w: Double) =>
+
+					if(Math.abs((this.s/this.w)- ((this.s+s)/(this.w+w))) <=1E-10){
+						pcount += 1
 					} else {
-						var next: String = getNext()
-						while(next != myID) next = getNext()
-						context.actorSelection("../"+next) ! Gossip(msg)
+						pcount = 0
+					}
+					this.s = this.s + s
+					this.w = this.w + w
+					this.s = this.s/2
+					this.w = this.w/2
+					
+					if(pcount == PUSH_SUM_MAX-1){
 						context.parent ! "Done"
 					}
+					var next : String = getNext()
+					while(next == myID) next = getNext()
+					context.actorSelection("../"+next) ! PushSum(this.s,this.w)
 			}
 		}
 

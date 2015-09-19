@@ -25,8 +25,7 @@ object project2 {
 			def receive = {
 				case CreateTopology() =>
 					
-					if(topology == "full"){
-						println("Creating the full topology")
+					if(topology == "full" || topology == "line"){
 						for(i <- 0 until numNodes){
 							var myID: String = i.toString
 							val act = context.actorOf(Props(new Node(myID, numNodes, topology, algorithm)),name=myID)
@@ -41,13 +40,8 @@ object project2 {
 						}
 					} 
 					if(topology == "3D"){
-
-					} 
-					if(topology == "line"){
-
 					} 
 					if(topology == "imp3D"){
-
 					} 
 
 				case "Done" =>
@@ -69,17 +63,28 @@ object project2 {
 			
 			var count: Int = _
 			var message: String = _
-			var s: Double= myID.toDouble
-			var w : Double= 0.0
-			var pcount : Int=_
+			var s: Double = myID.toDouble
+			var w : Double = 0.0
+			var pcount : Int = _
+			var next: String = _ 
 
 			def getNext(): String = {
+				
 				topology match {
 					case "full" =>
-						(Random.nextInt(numNodes)).toString
+						return (Random.nextInt(numNodes)).toString
+					case "line" =>
+						var x: Int = myID.toInt
+						if(x == 0){
+							return (x+1).toString
+						} else if(x == numNodes-1) {
+							return (x-1).toString
+						} else {
+							var ran: Int = Random.nextInt(2)
+							if(ran == 0) return (x-1).toString
+							else return (x+1).toString
+						}
 					// case "3D" =>
-					//case "line" =>
-
 					// case "imp3D" =>
 				}
 			}

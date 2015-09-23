@@ -40,8 +40,31 @@ object project2 {
 						}
 					} 
 					if(topology == "3D"){
+						var size: Int = Math.cbrt(numNodes).toInt
+						var count: Int = 0
+						for(i <- 0 until size){
+							for(j <- 0 until size){
+								for(k <- 0 until size){
+									if(count <= numNodes){
+										var myID: String = ((((i.toString).concat(".")).concat(j.toString)).concat(".")).concat(k.toString)
+										val act = context.actorOf(Props(new Node(myID, numNodes, topology, algorithm)),name=myID)
+										count += 1
+									}
+								}
+							}
+						}
+						startTime = System.currentTimeMillis
+						var pivot: String = "0.0.0"
+						println("Starting the algorithm from node = " + pivot)
+						if(algorithm == "gossip"){
+							context.actorSelection(pivot) ! Gossip(msg)
+						} else if(algorithm == "push-sum") {
+							context.actorSelection(pivot) ! PushSum(0,1)
+						}
 					} 
+					
 					if(topology == "imp3D"){
+
 					} 
 
 				case "Done" =>

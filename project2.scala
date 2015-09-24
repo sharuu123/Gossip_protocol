@@ -29,8 +29,9 @@ object project2 {
 					numNodes = num
 					if(topology == "full" || topology == "line"){
 						for(i <- 0 until numNodes){
-							var coordinates: Array[Int] = Array(0,0,0)
+							var coordinates: Array[Int] = Array(i,0,0)
 							var myID: String = i.toString
+							// println(myID)
 							val act = context.actorOf(Props(new Node(coordinates, myID, numNodes, topology, algorithm)),name=myID)
 						}
 						startTime = System.currentTimeMillis
@@ -45,25 +46,19 @@ object project2 {
 					if(topology == "3D"){
 						var size: Int = Math.cbrt(numNodes).toInt
 						numNodes = size*size*size
-						// while(size*size*size != numNodes){
-						// 	numNodes += 1
-						// }
-						// var count: Int = 0
 						for(i <- 0 until size){
 							for(j <- 0 until size){
 								for(k <- 0 until size){
-									// if(count <= numNodes){
-										var coordinates: Array[Int] = Array(i,j,k)
-										var myID: String = ((((i.toString).concat(".")).concat(j.toString)).concat(".")).concat(k.toString)
-										val act = context.actorOf(Props(new Node(coordinates, myID, numNodes, topology, algorithm)),name=myID)
-										// count += 1
-										act ! "GetNeighbors"
-									// }
+									var coordinates: Array[Int] = Array(i,j,k)
+									var myID: String = convert(i,j,k)
+									// println(myID)
+									val act = context.actorOf(Props(new Node(coordinates, myID, numNodes, topology, algorithm)),name=myID)
+									act ! "GetNeighbors"
 								}
 							}
 						}
 						startTime = System.currentTimeMillis
-						var pivot: String = "0.0.0"
+						var pivot: String = "1.1.1"
 						println("Starting the algorithm from node = " + pivot)
 						if(algorithm == "gossip"){
 							context.actorSelection(pivot) ! Gossip(msg)
@@ -95,7 +90,7 @@ object project2 {
 
 			var count: Int = _
 			var message: String = _
-			var s: Double = myID.toDouble
+			var s: Double = n(0).toDouble
 			var w : Double = 0.0
 			var pcount : Int = _
 			var next: String = _ 
@@ -119,7 +114,7 @@ object project2 {
 							else return (x+1).toString
 						}
 					case "3D" =>
-						var i:Int = Random.nextInt(6)
+						var i:Int = Random.nextInt(neighborList.size)
 						neighborList(i)
 					// case "imp3D" =>
 				}
@@ -159,12 +154,13 @@ object project2 {
 					}
 
 				case "GetNeighbors" =>
-					neighborList.append(convert(n(0)-1,n(1),n(2)))
-					neighborList.append(convert(n(0)+1,n(1),n(2)))
-					neighborList.append(convert(n(0),n(1)-1,n(2)))
-					neighborList.append(convert(n(0),n(1)+1,n(2)))
-					neighborList.append(convert(n(0),n(1),n(2)-1))
-					neighborList.append(convert(n(0),n(1),n(2)+1))
+					var size: Int = Math.cbrt(numNodes).toInt
+					if(n(0)-1 >= 0) neighborList.append(convert(n(0)-1,n(1),n(2)))
+					if(n(0)+1 < size) neighborList.append(convert(n(0)+1,n(1),n(2)))
+					if(n(1)-1 >= 0) neighborList.append(convert(n(0),n(1)-1,n(2)))
+					if(n(1)+1 < size) neighborList.append(convert(n(0),n(1)+1,n(2)))
+					if(n(2)-1 >= 0) neighborList.append(convert(n(0),n(1),n(2)-1))
+					if(n(2)+1 < size) neighborList.append(convert(n(0),n(1),n(2)+1))
 			}
 		}
 

@@ -23,6 +23,7 @@ object project2 {
 			var converged: Boolean = false
 			var startTime: Long = _
 			var numNodes: Int = _
+			var pivot: String = _
 
 			def receive = {
 				case CreateTopology() =>
@@ -35,15 +36,9 @@ object project2 {
 							val act = context.actorOf(Props(new Node(coordinates, myID, numNodes, topology, algorithm)),name=myID)
 						}
 						startTime = System.currentTimeMillis
-						var pivot: String = (Random.nextInt(numNodes)).toString
-						println("Starting the algorithm from node = " + pivot)
-						if(algorithm == "gossip"){
-							context.actorSelection(pivot) ! Gossip(msg)
-						} else if(algorithm == "push-sum") {
-							context.actorSelection(pivot) ! PushSum(0,1)
-						}
+						pivot = (Random.nextInt(numNodes)).toString
 					} 
-					if(topology == "3D"){
+					if(topology == "3D" || topology == "imp3D"){
 						var size: Int = Math.cbrt(numNodes).toInt
 						numNodes = size*size*size
 						for(i <- 0 until size){
@@ -58,18 +53,14 @@ object project2 {
 							}
 						}
 						startTime = System.currentTimeMillis
-						var pivot: String = "1.1.1"
-						println("Starting the algorithm from node = " + pivot)
+						pivot = "1.1.1"
+					} 
+					println("Starting the algorithm from node = " + pivot)
 						if(algorithm == "gossip"){
 							context.actorSelection(pivot) ! Gossip(msg)
 						} else if(algorithm == "push-sum") {
 							context.actorSelection(pivot) ! PushSum(0,1)
 						}
-					} 
-					
-					if(topology == "imp3D"){
-
-					} 
 
 				case "Done" =>
 					var totalTime: Long = System.currentTimeMillis - startTime
@@ -116,7 +107,9 @@ object project2 {
 					case "3D" =>
 						var i:Int = Random.nextInt(neighborList.size)
 						neighborList(i)
-					// case "imp3D" =>
+					case "imp3D" =>
+						var i:Int = Random.nextInt(neighborList.size)
+						neighborList(i)
 				}
 			}
 
@@ -161,6 +154,12 @@ object project2 {
 					if(n(1)+1 < size) neighborList.append(convert(n(0),n(1)+1,n(2)))
 					if(n(2)-1 >= 0) neighborList.append(convert(n(0),n(1),n(2)-1))
 					if(n(2)+1 < size) neighborList.append(convert(n(0),n(1),n(2)+1))
+					if(topology == "imp3D"){
+						var x: Int = Random.nextInt(size)
+						var y: Int = Random.nextInt(size)
+						var z: Int = Random.nextInt(size)
+						neighborList.append(convert(x,y,z))
+					}
 			}
 		}
 

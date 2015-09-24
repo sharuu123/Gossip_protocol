@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.actor.Props
 import scala.util.Random
 import scala.concurrent.duration._
+import scala.collection.mutable.ArrayBuffer
 
 object project2 {
 	def main(args: Array[String]){
@@ -17,18 +18,20 @@ object project2 {
 		case class PushSumDone(sum: Double)
 
 		println("project2 - Gossip Protocol")
-		class Master(numNodes: Int, topology: String, algorithm: String) extends Actor{
+		class Master(num: Int, topology: String, algorithm: String) extends Actor{
 
 			var converged: Boolean = false
 			var startTime: Long = _
+			var numNodes: Int = _
 
 			def receive = {
 				case CreateTopology() =>
-					
+					numNodes = num
 					if(topology == "full" || topology == "line"){
 						for(i <- 0 until numNodes){
+							var coordinates: Array[Int] = Array(0,0,0)
 							var myID: String = i.toString
-							val act = context.actorOf(Props(new Node(myID, numNodes, topology, algorithm)),name=myID)
+							val act = context.actorOf(Props(new Node(coordinates, myID, numNodes, topology, algorithm)),name=myID)
 						}
 						startTime = System.currentTimeMillis
 						var pivot: String = (Random.nextInt(numNodes)).toString
@@ -41,15 +44,21 @@ object project2 {
 					} 
 					if(topology == "3D"){
 						var size: Int = Math.cbrt(numNodes).toInt
-						var count: Int = 0
+						numNodes = size*size*size
+						// while(size*size*size != numNodes){
+						// 	numNodes += 1
+						// }
+						// var count: Int = 0
 						for(i <- 0 until size){
 							for(j <- 0 until size){
 								for(k <- 0 until size){
-									if(count <= numNodes){
+									// if(count <= numNodes){
+										var coordinates: Array[Int] = Array(i,j,k)
 										var myID: String = ((((i.toString).concat(".")).concat(j.toString)).concat(".")).concat(k.toString)
-										val act = context.actorOf(Props(new Node(myID, numNodes, topology, algorithm)),name=myID)
-										count += 1
-									}
+										val act = context.actorOf(Props(new Node(coordinates, myID, numNodes, topology, algorithm)),name=myID)
+										// count += 1
+										act ! "GetNeighbors"
+									// }
 								}
 							}
 						}
@@ -81,15 +90,17 @@ object project2 {
 			}
 		}
 
-		class Node(myID: String, numNodes: Int, topology: String, algorithm: String) extends Actor{
+		class Node(n: Array[Int], myID: String, numNodes: Int, topology: String, algorithm: String) 
+			extends Actor{
 
-			
 			var count: Int = _
 			var message: String = _
 			var s: Double = myID.toDouble
 			var w : Double = 0.0
 			var pcount : Int = _
 			var next: String = _ 
+			var neighborList: ArrayBuffer[String] = new ArrayBuffer[String]
+
 
 			def getNext(): String = {
 				
@@ -144,7 +155,20 @@ object project2 {
 						while(next == myID) next = getNext()
 						context.actorSelection("../"+next) ! PushSum(this.s,this.w)
 					}
+
+				case "GetNeighbors" =>
+					neighborList.append(convert(n(0)-1,n(1),n(2)))
+					neighborList.append(convert(n(0)+1,n(1),n(2)))
+					neighborList.append(convert(n(0),n(1)-1,n(2)))
+					neighborList.append(convert(n(0),n(1)+1,n(2)))
+					neighborList.append(convert(n(0),n(1),n(2)-1))
+					neighborList.append(convert(n(0),n(1),n(2)+1))
 			}
+		}
+
+		def convert(x:Int, y:Int, z:Int): String = {
+			return ((((x.toString).concat(".")).concat(y.toString)).concat(".")).concat(z.toString)
+
 		}
 
 		if(args.size<3){

@@ -118,7 +118,9 @@ object project2 {
 							if(ran == 0) return (x-1).toString
 							else return (x+1).toString
 						}
-					// case "3D" =>
+					case "3D" =>
+						var i:Int = Random.nextInt(6)
+						neighborList(i)
 					// case "imp3D" =>
 				}
 			}

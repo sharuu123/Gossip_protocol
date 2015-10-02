@@ -55,7 +55,7 @@ object project2 {
 							}
 						}
 						startTime = System.currentTimeMillis
-						pivot = "1.1.1"
+						pivot = convert(Random.nextInt(size),Random.nextInt(size),Random.nextInt(size))
 					} 
 					println("Starting the algorithm from node = " + pivot)
 						if(algorithm == "gossip"){

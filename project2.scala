@@ -33,7 +33,7 @@ object project2 {
 							var coordinates: Array[Int] = Array(i,0,0)
 							var myID: String = i.toString
 							// println(myID)
-							val act = context.actorOf(Props(new Node(coordinates, myID, numNodes, topology, algorithm)),name=myID)
+							val act = context.actorOf(Props(new Node(coordinates, myID, numNodes, topology, algorithm, i+1)),name=myID)
 						}
 						startTime = System.currentTimeMillis
 						pivot = (Random.nextInt(numNodes)).toString
@@ -41,13 +41,15 @@ object project2 {
 					if(topology == "3D" || topology == "imp3D"){
 						var size: Int = Math.cbrt(numNodes).toInt
 						numNodes = size*size*size
+						var count = 0
 						for(i <- 0 until size){
 							for(j <- 0 until size){
 								for(k <- 0 until size){
+									count += 1
 									var coordinates: Array[Int] = Array(i,j,k)
 									var myID: String = convert(i,j,k)
-									// println(myID)
-									val act = context.actorOf(Props(new Node(coordinates, myID, numNodes, topology, algorithm)),name=myID)
+									// println(count)
+									val act = context.actorOf(Props(new Node(coordinates, myID, numNodes, topology, algorithm, count)),name=myID)
 									act ! "GetNeighbors"
 								}
 							}
@@ -76,12 +78,12 @@ object project2 {
 			}
 		}
 
-		class Node(n: Array[Int], myID: String, numNodes: Int, topology: String, algorithm: String) 
+		class Node(n: Array[Int], myID: String, numNodes: Int, topology: String, algorithm: String, sum: Int) 
 			extends Actor{
 
 			var count: Int = _
 			var message: String = _
-			var s: Double = n(0).toDouble
+			var s: Double = sum.toDouble  
 			var w : Double = 0.0
 			var pcount : Int = _
 			var next: String = _ 
